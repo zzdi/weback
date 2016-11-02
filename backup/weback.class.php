@@ -1,8 +1,7 @@
 <?php
 /*
-数据库连接，
-备份还原数据库操作，还原数据库会先删掉数据库再重建
-备份还原网站操作，还原网站会先清空网站再还原，当前存放备份文件的目录不会被清空
+备份还原数据库和网站操作
+数据库连接方式支持mysql和mysqli
 */
 
 class weback
@@ -19,10 +18,8 @@ class weback
 			if(!@mysql_select_db(DB_NAME,$this->mysql)){
 				exit("数据库".DB_NAME."不存在");
 			}
-			$this->query("set names ".DB_CHARSET);
-		}else{
-			$this->query("set names ".DB_CHARSET);
 		}
+		$this->query("set names ".DB_CHARSET);
 	}
 	function disconnect(){
 		return DB_LINK=='mysql' ? mysql_close($this->mysql):$this->mysql->close();
@@ -51,10 +48,10 @@ class weback
 
 	function db_back(){
 		$rel2 = $this->fetch_asc('SHOW TABLE STATUS FROM '.DB_NAME);
-		$db=array();
+		$db = array();
 		foreach($rel2 as $key=>$value){
 			if(substr($value['Name'],0,strlen(DB_PRE))==DB_PRE){
-				$db[]=$value['Name'];
+				$db[] = $value['Name'];
 			}
 		}
 		$sql = "";
