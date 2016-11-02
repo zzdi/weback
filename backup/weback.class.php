@@ -11,9 +11,7 @@ class weback
 		$this->connect();
 	}
 	function connect(){
-		$mysqli = new mysqli(DB_HOST,DB_USER,DB_PASSWORD,DB_NAME);
-		$mysql =  mysql_connect(DB_HOST,DB_USER,DB_PASSWORD);
-		$this->mysql = DB_LINK=='mysql'?$mysql:$mysqli;
+		$this->mysql = DB_LINK=='mysql'?mysql_connect(DB_HOST,DB_USER,DB_PASSWORD):new mysqli(DB_HOST,DB_USER,DB_PASSWORD,DB_NAME);
 		if(!$this->mysql){
 			exit("数据库连接错误");
 		}
@@ -69,7 +67,7 @@ class weback
 				$insert=array();
 				foreach($record as $key=>$value){
 					foreach($value as $r_k=>$r_v){
-						$insert[$r_k] = DB_LINK=='mysql' ? "'".mysql_real_escape_string($r_v)."'" : "'".mysqli_real_escape_string($this->mysql,$v2)."'" ;
+						$insert[$r_k] = DB_LINK=='mysql' ? "'".mysql_real_escape_string($r_v)."'" : "'".mysqli_real_escape_string($this->mysql,$r_v)."'" ;
 					}
 					$sql.="INSERT INTO `".$v."` VALUES(".implode(',',$insert).");\n";
 				}
