@@ -8,34 +8,49 @@
 class weback
 {
 	public function __construct(){
-		$this->mysql = mysql_connect(DB_HOST,DB_USER,DB_PASSWORD);
-		if(!$this->mysql){
-			exit("数据库连接错误".mysql_error());
-		}
-		if(!@mysql_select_db(DB_NAME,$this->mysql)){
-			exit("数据库".DB_NAME."不存在");
-		}
-		@mysql_unbuffered_query("set names ".DB_CHARSET);
+		$this->connect();
 	}
-
-	function query($sql){
-		if(!$res = @mysql_query($sql,$this->mysql)){
-			exit("操作数据库失败".mysql_error()."<br>sql:{$sql}");
+	function connect(){
+		$mysqli = new mysqli(DB_HOST,DB_USER,DB_PASSWORD,DB_NAME);
+		$mysql =  mysql_connect(DB_HOST,DB_USER,DB_PASSWORD);
+		$this->mysql = DB_LINK=='mysql'?$mysql:$mysqli;
+		if(!$this->mysql){
+			exit("数据库连接错误");
 		}
-		return $res;
+		if(DB_LINK=='mysql'){
+			if(!@mysql_select_db(DB_NAME,$this->mysql)){
+				exit("数据库".DB_NAME."不存在");
+			}
+			$this->query("set names ".DB_CHARSET);
+		}else{
+			$this->query("set names ".DB_CHARSET);
+		}
+	}
+	function disconnect(){
+		return DB_LINK=='mysql' ? mysql_close($this->mysql):$this->mysql->close();
+	}
+	function query($sql){
+		return DB_LINK=='mysql' ? mysql_query($sql,$this->mysql) : $this->mysql->query($sql) ;
 	}
 
 	function fetch_asc($sql){
 		$result = $this->query($sql);
-		$arr=array();
-		while($rows = mysql_fetch_assoc($result)){
-			$arr[]=$rows;
+		$arr = array();
+		if(DB_LINK=='mysql'){
+			while($rows = mysql_fetch_assoc($result)){
+				$arr[]=$rows;
+			}
+			mysql_free_result($result);
+		}else{
+			while($rows = $result->fetch_array(MYSQLI_ASSOC)){
+				$arr[]=$rows;
+			}
+			$result->close();
 		}
-		mysql_free_result($result);
 		return $arr;
 	}
 
-	//备份数据库
+
 	function db_back(){
 		$rel2 = $this->fetch_asc('SHOW TABLE STATUS FROM '.DB_NAME);
 		$db=array();
@@ -54,7 +69,7 @@ class weback
 				$insert=array();
 				foreach($record as $key=>$value){
 					foreach($value as $r_k=>$r_v){
-						$insert[$r_k]="'".mysql_real_escape_string($r_v)."'";
+						$insert[$r_k] = DB_LINK=='mysql' ? "'".mysql_real_escape_string($r_v)."'" : "'".mysqli_real_escape_string($this->mysql,$v2)."'" ;
 					}
 					$sql.="INSERT INTO `".$v."` VALUES(".implode(',',$insert).");\n";
 				}
@@ -66,9 +81,11 @@ class weback
 	}
 	//还原数据库
 	function db_import(){
-		mysql_query("drop database ".DB_NAME);
-		mysql_query("create database ".DB_NAME);
-		mysql_select_db(DB_NAME,$this->mysql);
+		if(IMPORT_TYPE==1){
+			$this->query("drop database ".DB_NAME);
+			$this->query("create database ".DB_NAME);
+			$this->connect();
+		}
 		$data = @file_get_contents(DB_BACK);
 		$data = explode(";\n",trim($data));
 		if(!empty($data)){

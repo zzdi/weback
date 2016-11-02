@@ -8,19 +8,24 @@ include('./weback.class.php');
 
 $weback = new weback();
 
-//还原前也会先备份一次，如果还原的时候不需要可以注释掉再操作还原
-//备份数据库
-$weback->db_back();
-//备份网站
-$weback->web_back();
-
 $file = @$_GET['file'];
+if(empty($file)||IMPORT_BACK==1){
+	//备份数据库
+	$weback->db_back();
+	//备份网站
+	$weback->web_back();
+}
+
 if(!empty($file)){
 	//删除网站内容
-	$weback->del_dir('..');
+	if(IMPORT_TYPE==1){
+		$weback->del_dir('..');
+	}
 	//还原网站
 	$weback->web_import($file);
 	//还原数据库
 	$weback->db_import();
 	echo '还原网站成功！';
 }
+
+$weback->disconnect();
